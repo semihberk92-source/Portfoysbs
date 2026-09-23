@@ -89,7 +89,6 @@ input,select{width:100%;padding:12px;border:1px solid #ddd;border-radius:11px;ba
 </div>
 <div class="bottom"><button class="primary" onclick="showTab('add',document.querySelectorAll('.tabs button')[5])">+ Yeni İşlem</button></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
 <script>
 const KEY='portfolio_tracker_v11';
 const $=id=>document.getElementById(id);
@@ -148,22 +147,16 @@ function addTrade(){
  save(); $('saveMsg').textContent='Kaydedildi ✓'; setTimeout(()=>$('saveMsg').textContent='',1500);
 }
 $('jsonFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());data=d;data.importedAt=new Date().toLocaleString('tr-TR');save();alert('Portföy JSON içe aktarıldı.')}catch(err){alert('JSON okunamadı: '+err.message)}});
-$('pdfFile').addEventListener('change',async e=>{
+$('pdfFile').addEventListener('change', async e=>{
  const f=e.target.files[0]; if(!f)return;
- $('pdfResult').innerHTML='<p class="note">PDF okunuyor…</p>';
- try{
-  const pdfjs=window['pdfjsLib']; // fallback if CDN exposes global
-  if(!pdfjs) throw new Error('PDF motoru henüz yüklenmedi. Bu sürümde PDF import önizlemesi için internet bağlantısı gerekir.');
-  const arr=new Uint8Array(await f.arrayBuffer()); const pdf=await pdfjs.getDocument({data:arr}).promise; let text='';
-  for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const c=await page.getTextContent();text+=c.items.map(a=>a.str).join(' ')+'\\n'}
-  const matches=[...text.matchAll(/(\\d{2}\\/\\d{2}\\/\\d{2}).{0,100}?([A-Z]{1,6}\\d{6,})/g)];
-  $('pdfResult').innerHTML='<div class="panel"><b>PDF metni okundu</b><p class="note">İşlem satırları çıkarıldı. Kesin Midas parser'ı bir sonraki adımda mevcut JSON ile çapraz kontrol ederek ekleyeceğiz.</p><pre style="white-space:pre-wrap;font-size:11px;max-height:260px;overflow:auto">'+text.slice(0,8000).replace(/</g,'&lt;')+'</pre></div>';
- }catch(err){$('pdfResult').innerHTML='<p class="note">PDF önizlemesi bu cihaz/tarayıcıda kullanılamadı: '+err.message+'</p>'}
+ $('pdfResult').innerHTML='<div class="panel"><b>PDF seçildi ✓</b><p class="note">'+f.name+' ('+(f.size/1024).toFixed(0)+' KB)</p><p class="note">PDF dosyası seçildi. Midas parser bir sonraki adımda eklenecek; dosya bu aşamada cihazdan dışarı gönderilmiyor.</p></div>';
 });
 function exportData(){const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});download(b,'portfolio-backup.json')}
 function exportCSV(){let rows=[['id','date','ticker','kind','side','qty','price','fee','strategy']];(data.trades||[]).forEach(x=>rows.push([x.id,tradeDate(x),x.ticker,x.kind||'option',x.side,qty(x),x.price||x.openPrice||'',x.fee||x.openFee||'',x.strategy||'']));download(new Blob([rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\\n')],{type:'text/csv'}),'portfolio-trades.csv')}
 function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function clearAll(){if(confirm('Bu cihazdaki portföy verileri silinsin mi?')){localStorage.removeItem(KEY);data=empty();render()}}
+// Safari fallback: explicit event listeners for all tabs.
+document.querySelectorAll('.tabs button').forEach((btn,i)=>{btn.addEventListener('click',()=>showTab(['summary','options','stocks','monthly','import','add'][i],btn));});
 render();
 </script>
 </body>
