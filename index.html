@@ -1,0 +1,205 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json"><title>Portfolio Tracker V2.8</title><style>:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;color:#111827;background:#f4f5f7}*{box-sizing:border-box}body{margin:0;background:#f4f5f7}header{padding:calc(12px + env(safe-area-inset-top)) 16px 10px;position:sticky;top:0;background:#f4f5f7ee;backdrop-filter:blur(18px);z-index:10}.wrap{max-width:1000px;margin:auto;padding:0 14px 100px}h1{margin:0;font-size:29px}h2{font-size:18px;margin:16px 0 9px}.muted,.note{color:#6b7280;font-size:12px}.tabs{display:flex;gap:7px;overflow:auto;padding:8px 0}.tabs button{white-space:nowrap}button{border:0;border-radius:12px;padding:11px 14px;font-weight:700;background:#e5e7eb;color:#111827}button.primary{background:#0f172a;color:#fff}button.danger{background:#fee2e2;color:#991b1b}.tab{display:none}.tab.active{display:block}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.card,.panel{background:#fff;border-radius:18px;padding:15px;box-shadow:0 1px 5px #0001}.k{font-size:12px;color:#6b7280}.v{font-size:21px;font-weight:800;margin-top:5px}.pos{color:#087f5b}.neg{color:#b42318}.row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eee}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:9px 5px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}th{color:#6b7280}.scroll{overflow:auto}.actions{display:flex;gap:8px;flex-wrap:wrap}input,select{width:100%;padding:12px;border:1px solid #ddd;border-radius:11px;background:#fff;margin:4px 0 9px}.form{display:grid;grid-template-columns:1fr 1fr;gap:7px}.full{grid-column:1/-1}.good{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:13px;padding:11px;font-size:12px;color:#065f46}.error{background:#fef2f2;border:1px solid #fecaca;border-radius:13px;padding:11px;font-size:12px;color:#991b1b}.bottom{position:fixed;bottom:0;left:0;right:0;background:#ffffffef;backdrop-filter:blur(16px);padding:9px 14px calc(9px + env(safe-area-inset-bottom));z-index:20}.bottom button{width:100%}@media(max-width:600px){.form{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}}</style></head><body><header><div class="wrap"><h1>Portfolio</h1><div class="muted">Hisse + Opsiyon • USD • V2.8</div></div></header><div class="wrap"><div class="tabs"><button class="primary" data-tab="summary">Özet</button><button data-tab="monthly">Aylık</button><button data-tab="pnl">P&L</button><button data-tab="options">Opsiyonlar</button><button data-tab="stocks">Hisseler</button><button data-tab="optionShare">Opsiyon / Hisse</button><button data-tab="cc">CC / CSP</button><button data-tab="import">İçe Aktar</button><button data-tab="add">+ İşlem</button></div><div id="bootError"></div>
+<section id="summary" class="tab active"><div class="good"><b>V2.8:</b> Erken kapatma, expire ve assignment pozisyon bazında hesaplanır.</div><div class="grid" id="summaryCards"></div><div class="panel"><h2>Durum</h2><div id="summaryRows"></div></div></section>
+<section id="monthly" class="tab">
+<div class="panel"><h2>Aylık performans</h2>
+<p class="note"><b>Opsiyon getirisi</b> artık gerçekleşmiş opsiyon P&L'idir: short opsiyonda alınan prim − geri alım maliyeti − komisyonlar; long opsiyonda satış/kapanış değeri − alış primi − komisyonlar. Açılışta alınan/ödenen nakit tek başına aylık getiri değildir.</p>
+<div class="scroll"><table id="monthlyTable"></table></div>
+<div id="monthlyAudit"></div>
+</div></section>
+<section id="pnl" class="tab"><div class="grid" id="pnlCards"></div><div class="panel"><h2>Gerçekleşmiş P&L</h2><div id="pnlBreakdown"></div></div></section>
+<section id="options" class="tab"><div class="panel"><h2>Opsiyonlar</h2><div class="scroll"><table id="optionTable"></table></div></div></section>
+<section id="stocks" class="tab"><div class="panel"><h2>Hisseler</h2><div class="scroll"><table id="stockTable"></table></div></div></section>
+<section id="optionShare" class="tab"><div class="panel"><h2>Opsiyon primi / hisse</h2><p class="note">Net gerçekleşmiş opsiyon P&L / kullanılan kontrat × 100.</p><div class="scroll"><table id="optionShareTable"></table></div></div></section>
+<section id="cc" class="tab"><div class="panel"><h2>CC / CSP sonuçları</h2><p class="note">Yüzdeler sonuçlanmış işlemler üzerinden. exercised = assign, expired = vadesinde, manual = erken kapatma.</p><div class="scroll"><table id="ccTable"></table></div></div></section>
+<section id="import" class="tab"><div class="panel"><h2>İçe Aktar</h2><input type="file" id="jsonFile" accept=".json,application/json"><div id="importMsg"></div><div class="actions"><button class="primary" id="exportBtn">JSON Yedekle</button><button id="csvBtn">CSV çıkar</button><button class="danger" id="clearBtn">Cihaz verisini sil</button></div></div></section>
+<section id="add" class="tab"><div class="panel"><h2>Yeni işlem</h2><div class="form"><div><label>Tarih</label><input id="date" type="date"></div><div><label>Ticker</label><input id="ticker" placeholder="IREN"></div><div><label>Tür</label><select id="kind"><option value="option">Opsiyon</option><option value="stock">Hisse</option><option value="flow">Para hareketi</option></select></div><div><label>İşlem</label><select id="side"><option value="S">Sell to Open</option><option value="L">Buy to Open</option><option value="B">Buy</option><option value="SELL">Sell</option><option value="D">Deposit</option><option value="W">Withdraw</option><option value="I">Income</option></select></div><div><label>Strike</label><input id="strike" type="number" step=".01"></div><div><label>Expiry</label><input id="expiry" type="date"></div><div><label>Kontrat/adet</label><input id="qty" type="number" value="1"></div><div><label>Prim/fiyat</label><input id="price" type="number" step=".01"></div><div><label>Komisyon</label><input id="fee" type="number" step=".01" value="1.50"></div><div><label>Tip</label><select id="otype"><option value="P">Put</option><option value="C">Call</option></select></div><div class="full"><label>Not</label><input id="note"></div></div><button class="primary" id="saveTrade" style="width:100%">Kaydet</button><p id="saveMsg" class="note"></p></div></section></div><div class="bottom"><button class="primary" id="quickAdd">+ Yeni İşlem</button></div>
+<script>(function(){
+'use strict';
+const KEY='portfolio_tracker_v29';
+const OLD=['portfolio_tracker_v28','portfolio_tracker_v27','portfolio_tracker_v25','portfolio_tracker_v2','portfolio_tracker_v12'];
+const MV={'2026-01':1222.90,'2026-02':5410.37,'2026-03':8366.96,'2026-04':12084.63,'2026-05':14199.86,'2026-06':7045.34,'2026-07':14869.05,'2026-08':19178.21};
+const $=id=>document.getElementById(id);
+const n=x=>Number(x)||0;
+const money=x=>'$'+n(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=x=>(n(x)*100).toFixed(2)+'%';
+
+function empty(){return{v:2,method:'avg',trades:[],stocks:[],flows:[],prices:{},reconciliation:{monthEndPortfolioValues:MV}}}
+function norm(x){
+ x=x||empty();
+ x.trades=Array.isArray(x.trades)?x.trades:[];
+ x.stocks=Array.isArray(x.stocks)?x.stocks:[];
+ x.flows=Array.isArray(x.flows)?x.flows:[];
+ x.reconciliation=x.reconciliation||{};
+ x.reconciliation.monthEndPortfolioValues=Object.assign({},MV,x.reconciliation.monthEndPortfolioValues||{});
+ return x;
+}
+function load(){
+ for(const k of [KEY].concat(OLD)){
+  try{const r=localStorage.getItem(k);if(r){const x=norm(JSON.parse(r));if(k!==KEY)localStorage.setItem(KEY,JSON.stringify(x));return x}}catch(e){}
+ }
+ return empty();
+}
+let data=load();
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function showTab(id){
+ const e=$(id);if(!e)return;
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ e.classList.add('active');
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('primary',b.dataset.tab===id));
+}
+function realizedOption(o){
+ if(o.status!=='closed')return 0;
+ const q=n(o.qty),m=n(o.mult)||100;
+ const fees=n(o.openFee)+n(o.closeFee);
+ const unit=o.side==='S' ? n(o.openPrice)-n(o.closePrice) : n(o.closePrice)-n(o.openPrice);
+ return unit*q*m-fees;
+}
+function optionMonthly(){
+ const r={};
+ for(const o of data.trades){
+  if(o.status==='closed'&&o.closeDate){
+   const mo=String(o.closeDate).slice(0,7);
+   r[mo]??={realized:0,closed:0,assign:0,expire:0,early:0};
+   r[mo].realized+=realizedOption(o);
+   r[mo].closed+=n(o.qty);
+   if(o.closeKind==='exercised')r[mo].assign+=n(o.qty);
+   else if(o.closeKind==='expired')r[mo].expire+=n(o.qty);
+   else if(o.closeKind==='manual')r[mo].early+=n(o.qty);
+  }
+ }
+ return r;
+}
+function optionCashMonthly(){
+ const r={};
+ for(const o of data.trades){
+  if(!o.openDate)continue;
+  const mo=String(o.openDate).slice(0,7);
+  r[mo]??={short:0,long:0};
+  const gross=n(o.openPrice)*n(o.qty)*(n(o.mult)||100);
+  if(o.side==='S')r[mo].short+=gross-n(o.openFee);
+  else r[mo].long+=gross+n(o.openFee);
+ }
+ return r;
+}
+function stockMonthly(){
+ const h={},r={};
+ for(const s of data.stocks.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)))){
+  const t=s.ticker;h[t]??={q:0,c:0};const q=n(s.qty);
+  if(s.side==='B'){h[t].q+=q;h[t].c+=q*n(s.price)+n(s.fee)}
+  else{
+   const avg=h[t].q?h[t].c/h[t].q:0;
+   const mo=String(s.date).slice(0,7);
+   r[mo]=(r[mo]||0)+(n(s.price)-avg)*q-n(s.fee);
+   h[t].q-=q;h[t].c-=avg*q;
+  }
+ }
+ return r;
+}
+function incomeMonthly(){
+ const r={};
+ for(const f of data.flows){
+  if(f.kind==='I'){const mo=String(f.date).slice(0,7);r[mo]=(r[mo]||0)+n(f.amount)}
+ }
+ return r;
+}
+function audit(){
+ const issues=[];
+ const pre2026=data.trades.filter(o=>o.openDate&&o.openDate<'2026-01-01'&&o.status==='closed');
+ if(pre2026.some(o=>n(o.openPrice)===0&&String(o.notes||'').toLowerCase().includes('bilinmiyor')))
+  issues.push('Ocak: 2025-12-31 açılmış NVTS pozisyonunun giriş primi bilinmiyor. Ocak P&L yalnızca bilinen kapanış maliyetini gösteriyor; tam getiri olarak yorumlanmamalı.');
+ issues.push('Açılışta long opsiyon primi ödenmesi gerçekleşmiş P&L değildir. Örneğin NVO $745 alışının Şubat getirisine -$745 olarak yazılması hatalıdır; NVO ancak Nisan kapanışında gerçekleşen P&L üretmiştir.');
+ issues.push('Assignment durumunda opsiyon P&L yalnızca prim ve komisyonları içerir; oluşan hisse alış/satışı ayrı hisse muhasebesinde tutulur.');
+ issues.push('Eylül için ay sonu portföy snapshot değeri bulunmadığından Eylül yüzdesi hesaplanmaz.');
+ return issues;
+}
+function render(){
+ const om=optionMonthly(),cm=optionCashMonthly(),sm=stockMonthly(),im=incomeMonthly();
+ const months=new Set([...Object.keys(om),...Object.keys(cm),...Object.keys(sm),...Object.keys(im)]);
+ const snaps=data.reconciliation.monthEndPortfolioValues||MV;
+ const rows=[...months].sort().reverse().map(m=>{
+  const realized=om[m]?.realized||0, shortCash=cm[m]?.short||0, longCash=cm[m]?.long||0;
+  const stock=sm[m]||0, income=im[m]||0, general=realized+stock+income;
+  const pv=snaps[m];
+  return '<tr><td><b>'+m+'</b></td>'+
+   '<td class="'+(realized>=0?'pos':'neg')+'"><b>'+money(realized)+'</b></td>'+
+   '<td>'+money(shortCash)+'</td><td>'+money(longCash)+'</td>'+
+   '<td>'+money(stock)+'</td><td>'+money(income)+'</td>'+
+   '<td class="'+(general>=0?'pos':'neg')+'"><b>'+money(general)+'</b></td>'+
+   '<td>'+(pv?money(pv):'—')+'</td>'+
+   '<td>'+(pv?pct(realized/pv):'—')+'</td>'+
+   '<td>'+(pv?pct(general/pv):'—')+'</td></tr>';
+ }).join('');
+ $('monthlyTable').innerHTML='<tr><th>Ay</th><th>Opsiyon realize P&L</th><th>Short prim nakdi</th><th>Long prim ödemesi</th><th>Hisse P&L</th><th>Gelir</th><th>Genel realize P&L</th><th>Ay sonu portföy</th><th>Opsiyon %</th><th>Genel %</th></tr>'+rows;
+ $('monthlyAudit').innerHTML='<div class="good"><b>Kontrol kuralı:</b> Long opsiyon alışları açıldığı ayın realize P&amp;L değerini azaltmaz. Erken kapanan short opsiyonlarda geri alım maliyeti ve komisyonlar aynı pozisyonun net P&amp;L değerinden düşülür.</div>'+audit().map(x=>'<div class="error" style="margin-top:8px">'+x+'</div>').join('');
+
+ const aug=om['2026-08']?.realized||0;
+ const ytd=Object.values(om).reduce((a,x)=>a+x.realized,0);
+ $('summaryCards').innerHTML=[
+  ['Ağustos net opsiyon P&L',money(aug)],
+  ['Ağustos short prim nakdi',money(cm['2026-08']?.short||0)],
+  ['YTD net opsiyon P&L',money(ytd)],
+  ['Ağustos sonu portföy',money(MV['2026-08'])]
+ ].map(a=>'<div class="card"><div class="k">'+a[0]+'</div><div class="v">'+a[1]+'</div></div>').join('');
+ $('summaryRows').innerHTML='<div class="row"><span>Opsiyon kayıtları</span><b>'+data.trades.length+'</b></div><div class="row"><span>Hisse kayıtları</span><b>'+data.stocks.length+'</b></div><div class="row"><span>Para hareketleri</span><b>'+data.flows.length+'</b></div>';
+
+ const closed=data.trades.filter(o=>o.status==='closed');
+ const optTotal=closed.reduce((a,o)=>a+realizedOption(o),0);
+ const stockTotal=Object.values(sm).reduce((a,x)=>a+x,0);
+ const incomeTotal=Object.values(im).reduce((a,x)=>a+x,0);
+ $('pnlCards').innerHTML=[
+  ['Net gerçekleşmiş opsiyon P&L',money(optTotal)],
+  ['Hisse gerçekleşmiş P&L',money(stockTotal)],
+  ['Gelir',money(incomeTotal)],
+  ['Genel gerçekleşmiş P&L',money(optTotal+stockTotal+incomeTotal)]
+ ].map(a=>'<div class="card"><div class="k">'+a[0]+'</div><div class="v">'+a[1]+'</div></div>').join('');
+ $('pnlBreakdown').innerHTML='<div class="row"><span>Opsiyon</span><b>'+money(optTotal)+'</b></div><div class="row"><span>Hisse</span><b>'+money(stockTotal)+'</b></div><div class="row"><span>Gelir</span><b>'+money(incomeTotal)+'</b></div>';
+
+ $('optionTable').innerHTML='<tr><th>Kontrat</th><th>Side</th><th>Qty</th><th>Open</th><th>Close</th><th>Durum</th><th>Net P&L</th></tr>'+
+ data.trades.map(o=>'<tr><td><b>'+o.ticker+'</b> '+n(o.strike)+' '+(o.type||'')+'</td><td>'+(o.side==='S'?'Short':'Long')+'</td><td>'+n(o.qty)+'</td><td>'+money(o.openPrice)+'</td><td>'+money(o.closePrice)+'</td><td>'+String(o.status||'open')+'</td><td class="'+(realizedOption(o)>=0?'pos':'neg')+'">'+money(realizedOption(o))+'</td></tr>').join('');
+
+ const sb={};
+ data.stocks.forEach(s=>sb[s.ticker]=(sb[s.ticker]||0)+(s.side==='B'?1:-1)*n(s.qty));
+ $('stockTable').innerHTML='<tr><th>Ticker</th><th>Net adet</th></tr>'+Object.entries(sb).map(([t,q])=>'<tr><td><b>'+t+'</b></td><td>'+q+'</td></tr>').join('');
+
+ const os={};
+ data.trades.forEach(o=>{
+  if(o.status!=='closed'||!o.ticker)return;
+  const t=o.ticker;os[t]??={p:0,q:0};
+  os[t].p+=realizedOption(o);os[t].q+=n(o.qty);
+ });
+ $('optionShareTable').innerHTML='<tr><th>Hisse</th><th>Net realize opsiyon P&L</th><th>Kapanan kontrat</th><th>$/hisse</th></tr>'+
+ Object.entries(os).sort((a,b)=>b[1].p-a[1].p).map(([t,x])=>'<tr><td><b>'+t+'</b></td><td>'+money(x.p)+'</td><td>'+x.q+'</td><td><b>'+money(x.q?x.p/(x.q*100):0)+'</b></td></tr>').join('');
+
+ const ct=t=>data.trades.filter(o=>o.side==='S'&&o.type===t);
+ $('ccTable').innerHTML='<tr><th>Tür</th><th>Açılan</th><th>Açık</th><th>Sonuç</th><th>Assign</th><th>%</th><th>Expire</th><th>%</th><th>Erken</th><th>%</th></tr>'+
+ ['C','P'].map(t=>{
+  const a=ct(t),c=a.filter(o=>o.status==='closed'),as=c.filter(o=>o.closeKind==='exercised').reduce((x,o)=>x+n(o.qty),0),ex=c.filter(o=>o.closeKind==='expired').reduce((x,o)=>x+n(o.qty),0),ma=c.filter(o=>o.closeKind==='manual').reduce((x,o)=>x+n(o.qty),0),total=c.reduce((x,o)=>x+n(o.qty),0),open=a.filter(o=>o.status!=='closed').reduce((x,o)=>x+n(o.qty),0),all=a.reduce((x,o)=>x+n(o.qty),0);
+  return '<tr><td><b>'+(t==='C'?'CC':'CSP')+'</b></td><td>'+all+'</td><td>'+open+'</td><td>'+total+'</td><td>'+as+'</td><td>'+pct(total?as/total:0)+'</td><td>'+ex+'</td><td>'+pct(total?ex/total:0)+'</td><td>'+ma+'</td><td>'+pct(total?ma/total:0)+'</td></tr>';
+ }).join('');
+}
+function bind(){
+ document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+ $('quickAdd').addEventListener('click',()=>showTab('add'));
+ $('jsonFile').addEventListener('change',async e=>{
+  try{data=norm(JSON.parse(await e.target.files[0].text()));localStorage.setItem(KEY,JSON.stringify(data));render();$('importMsg').innerHTML='<div class="good">JSON içe aktarıldı ✓</div>'}
+  catch(err){$('importMsg').innerHTML='<div class="error">JSON okunamadı: '+err.message+'</div>'}
+ });
+ $('exportBtn').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='portfolio-v2.9-backup.json';a.click()});
+ $('clearBtn').addEventListener('click',()=>{if(confirm('Cihazdaki veriler silinsin mi?')){localStorage.removeItem(KEY);data=empty();render()}});
+ $('saveTrade').addEventListener('click',()=>{
+  const k=$('kind').value,s=$('side').value,id='manual-'+Date.now(),date=$('date').value,t=$('ticker').value.trim().toUpperCase(),q=n($('qty').value),p=n($('price').value),f=n($('fee').value);
+  if(!date||!t){$('saveMsg').textContent='Tarih ve ticker gerekli.';return}
+  if(k==='flow'){data.flows.push({id,date,kind:s,amount:Math.abs(p)});save();return}
+  if(k==='stock'){data.stocks.push({id,date,ticker:t,side:s,qty:q,price:p,fee:f});save();return}
+  data.trades.push({id,ticker:t,type:$('otype').value,side:s,qty:q,mult:100,strike:n($('strike').value),expiry:$('expiry').value,openDate:date,openPrice:p,openFee:f,status:'open'});save();
+ });
+ $('csvBtn').addEventListener('click',()=>{
+  const rows=[['id','openDate','closeDate','ticker','type','side','qty','openPrice','closePrice','openFee','closeFee','closeKind','status']];
+  data.trades.forEach(o=>rows.push([o.id||'',o.openDate||'',o.closeDate||'',o.ticker||'',o.type||'',o.side||'',o.qty||'',o.openPrice||'',o.closePrice||'',o.openFee||'',o.closeFee||'',o.closeKind||'',o.status||'']));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\\n'),a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='portfolio-trades.csv';a.click();
+ });
+}
+try{bind();render()}catch(e){$('bootError').innerHTML='<div class="error"><b>Uygulama başlatılamadı.</b><br>'+String(e.message||e)+'</div>';console.error(e)}
+})();</script></body></html>
