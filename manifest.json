@@ -1,0 +1,9 @@
+{
+  "name": "Portfolio Tracker V2.10",
+  "short_name": "Portfolio",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "description": "US stocks and options portfolio tracker with lot-based effective stock cost."
+}
