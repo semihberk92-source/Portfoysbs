@@ -1,0 +1,10 @@
+{
+  "version": "2.14",
+  "features": [
+    "TWR proxy for flow months",
+    "period MWR",
+    "annualized XIRR",
+    "Modified Dietz reference"
+  ],
+  "dataSource": "V2.13 bundled data"
+}
