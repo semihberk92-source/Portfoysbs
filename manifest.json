@@ -1,0 +1,10 @@
+{
+  "version": "2.14 Clean",
+  "features": [
+    "TWR",
+    "period MWR",
+    "annualized XIRR",
+    "Modified Dietz reference"
+  ],
+  "dataSource": "Empty clean starter; no bundled personal portfolio data"
+}
